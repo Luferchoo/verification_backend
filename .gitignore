@@ -1,0 +1,14 @@
+# Evita subir archivos sensibles
+.env
+.env.local
+.env.development
+.env.production
+
+# Node modules
+node_modules/
+
+# Archivos de logs
+*.log
+
+# Otros
+.DS_Store
