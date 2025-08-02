@@ -9,6 +9,7 @@ app.use(cors());
 app.use(express.json());
 
 app.post('/verificar', async (req, res) => {
+  console.log('Body recibido:', req.body); 
   const { noticiaTexto } = req.body;
 
   try {
