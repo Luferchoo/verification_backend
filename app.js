@@ -6,6 +6,7 @@ const verificarConIA = require('./ia/verificadorIAEstructurado');
 const extraerTextoDeLink = require('./utils/extraerTextoDeLink');
 const BlockchainService = require('./blockchain/blockchainServiceSimple');
 const BlockchainServiceHashRegistry = require('./blockchain/blockchainServiceHashRegistry');
+const BlockchainServiceSourceRegistry = require('./blockchain/blockchainServiceSourceRegistry');
 
 app.use(cors());
 app.use(express.json());
@@ -148,7 +149,11 @@ app.get('/estadisticas', (req, res) => {
       'GET /estadisticas - Obtener estadísticas',
       'POST /registrar-hash - Registrar hash de noticia para integridad',
       'GET /verificar-integridad/:hash - Verificar integridad de noticia',
-      'GET /estadisticas-hash-registry - Obtener estadísticas del hash registry'
+      'GET /estadisticas-hash-registry - Obtener estadísticas del hash registry',
+      'POST /registrar-fuente - Registrar fuente/autor confiable',
+      'GET /verificar-fuente/:address - Verificar fuente por dirección',
+      'POST /verificar-fuente-score - Verificar fuente con score mínimo',
+      'GET /estadisticas-source-registry - Obtener estadísticas del source registry'
     ]
   });
 });
@@ -223,6 +228,152 @@ app.post('/registrar-multiples-hashes', async (req, res) => {
   } catch (error) {
     console.error('Error registrando múltiples hashes:', error.message);
     res.status(500).json({ error: 'Error registrando múltiples hashes' });
+  }
+});
+
+// Endpoint para registrar fuente/autor confiable
+app.post('/registrar-fuente', async (req, res) => {
+  const { sourceAddress, sourceInfo } = req.body;
+
+  try {
+    const sourceRegistryService = new BlockchainServiceSourceRegistry();
+    const resultado = await sourceRegistryService.registrarFuente(sourceAddress, sourceInfo);
+    
+    res.json(resultado);
+  } catch (error) {
+    console.error('Error registrando fuente:', error.message);
+    res.status(500).json({ error: 'Error registrando fuente' });
+  }
+});
+
+// Endpoint para verificar fuente por dirección
+app.get('/verificar-fuente/:address', async (req, res) => {
+  const { address } = req.params;
+
+  try {
+    const sourceRegistryService = new BlockchainServiceSourceRegistry();
+    const resultado = await sourceRegistryService.verificarFuente(address);
+    
+    res.json(resultado);
+  } catch (error) {
+    console.error('Error verificando fuente:', error.message);
+    res.status(500).json({ error: 'Error verificando fuente' });
+  }
+});
+
+// Endpoint para verificar fuente con score mínimo
+app.post('/verificar-fuente-score', async (req, res) => {
+  const { sourceAddress, minTrustScore } = req.body;
+
+  try {
+    const sourceRegistryService = new BlockchainServiceSourceRegistry();
+    const resultado = await sourceRegistryService.verificarFuenteConScoreMinimo(sourceAddress, minTrustScore);
+    
+    res.json(resultado);
+  } catch (error) {
+    console.error('Error verificando fuente con score:', error.message);
+    res.status(500).json({ error: 'Error verificando fuente con score' });
+  }
+});
+
+// Endpoint para actualizar trust score de fuente
+app.post('/actualizar-trust-score', async (req, res) => {
+  const { sourceAddress, nuevoTrustScore } = req.body;
+
+  try {
+    const sourceRegistryService = new BlockchainServiceSourceRegistry();
+    const resultado = await sourceRegistryService.actualizarTrustScore(sourceAddress, nuevoTrustScore);
+    
+    res.json(resultado);
+  } catch (error) {
+    console.error('Error actualizando trust score:', error.message);
+    res.status(500).json({ error: 'Error actualizando trust score' });
+  }
+});
+
+// Endpoint para desactivar fuente
+app.post('/desactivar-fuente', async (req, res) => {
+  const { sourceAddress } = req.body;
+
+  try {
+    const sourceRegistryService = new BlockchainServiceSourceRegistry();
+    const resultado = await sourceRegistryService.desactivarFuente(sourceAddress);
+    
+    res.json(resultado);
+  } catch (error) {
+    console.error('Error desactivando fuente:', error.message);
+    res.status(500).json({ error: 'Error desactivando fuente' });
+  }
+});
+
+// Endpoint para reactivar fuente
+app.post('/reactivar-fuente', async (req, res) => {
+  const { sourceAddress } = req.body;
+
+  try {
+    const sourceRegistryService = new BlockchainServiceSourceRegistry();
+    const resultado = await sourceRegistryService.reactivarFuente(sourceAddress);
+    
+    res.json(resultado);
+  } catch (error) {
+    console.error('Error reactivando fuente:', error.message);
+    res.status(500).json({ error: 'Error reactivando fuente' });
+  }
+});
+
+// Endpoint para registrar múltiples fuentes
+app.post('/registrar-multiples-fuentes', async (req, res) => {
+  const { fuentes } = req.body; // Array de objetos con información de fuentes
+
+  try {
+    const sourceRegistryService = new BlockchainServiceSourceRegistry();
+    const resultado = await sourceRegistryService.registrarMultiplesFuentes(fuentes);
+    
+    res.json(resultado);
+  } catch (error) {
+    console.error('Error registrando múltiples fuentes:', error.message);
+    res.status(500).json({ error: 'Error registrando múltiples fuentes' });
+  }
+});
+
+// Endpoint para verificar múltiples fuentes
+app.post('/verificar-multiples-fuentes', async (req, res) => {
+  const { sourceAddresses } = req.body; // Array de direcciones
+
+  try {
+    const sourceRegistryService = new BlockchainServiceSourceRegistry();
+    const resultado = await sourceRegistryService.verificarMultiplesFuentes(sourceAddresses);
+    
+    res.json(resultado);
+  } catch (error) {
+    console.error('Error verificando múltiples fuentes:', error.message);
+    res.status(500).json({ error: 'Error verificando múltiples fuentes' });
+  }
+});
+
+// Endpoint para obtener estadísticas del source registry
+app.get('/estadisticas-source-registry', async (req, res) => {
+  try {
+    const sourceRegistryService = new BlockchainServiceSourceRegistry();
+    const resultado = await sourceRegistryService.obtenerEstadisticas();
+    
+    res.json(resultado);
+  } catch (error) {
+    console.error('Error obteniendo estadísticas:', error.message);
+    res.status(500).json({ error: 'Error obteniendo estadísticas' });
+  }
+});
+
+// Endpoint para verificar si la dirección actual es admin
+app.get('/verificar-admin', async (req, res) => {
+  try {
+    const sourceRegistryService = new BlockchainServiceSourceRegistry();
+    const resultado = await sourceRegistryService.verificarSiEsAdmin();
+    
+    res.json(resultado);
+  } catch (error) {
+    console.error('Error verificando admin:', error.message);
+    res.status(500).json({ error: 'Error verificando admin' });
   }
 });
 
