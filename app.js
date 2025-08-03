@@ -2,9 +2,10 @@
 const express = require('express');
 const cors = require('cors');
 const app = express();
-const verificarConIA = require('./ia/verificadorIAFallback');
+const verificarConIA = require('./ia/verificadorIAEstructurado');
 const extraerTextoDeLink = require('./utils/extraerTextoDeLink');
 const BlockchainService = require('./blockchain/blockchainServiceSimple');
+const BlockchainServiceHashRegistry = require('./blockchain/blockchainServiceHashRegistry');
 
 app.use(cors());
 app.use(express.json());
@@ -144,9 +145,85 @@ app.get('/estadisticas', (req, res) => {
       'POST /subir-a-blockchain - Subir verificación manual a blockchain',
       'GET /verificar-transaccion/:hash - Verificar transacción',
       'POST /configurar-umbral - Configurar umbral de score',
-      'GET /estadisticas - Obtener estadísticas'
+      'GET /estadisticas - Obtener estadísticas',
+      'POST /registrar-hash - Registrar hash de noticia para integridad',
+      'GET /verificar-integridad/:hash - Verificar integridad de noticia',
+      'GET /estadisticas-hash-registry - Obtener estadísticas del hash registry'
     ]
   });
+});
+
+// Endpoint para registrar hash de noticia para verificación de integridad
+app.post('/registrar-hash', async (req, res) => {
+  const { noticiaTexto, resultadoVerificacion } = req.body;
+
+  try {
+    const hashRegistryService = new BlockchainServiceHashRegistry();
+    const resultado = await hashRegistryService.registrarHashNoticia(noticiaTexto, resultadoVerificacion);
+    
+    res.json(resultado);
+  } catch (error) {
+    console.error('Error registrando hash:', error.message);
+    res.status(500).json({ error: 'Error registrando hash' });
+  }
+});
+
+// Endpoint para verificar integridad de noticia
+app.get('/verificar-integridad/:hash', async (req, res) => {
+  const { hash } = req.params;
+
+  try {
+    const hashRegistryService = new BlockchainServiceHashRegistry();
+    const resultado = await hashRegistryService.verificarHash(hash);
+    
+    res.json(resultado);
+  } catch (error) {
+    console.error('Error verificando integridad:', error.message);
+    res.status(500).json({ error: 'Error verificando integridad' });
+  }
+});
+
+// Endpoint para verificar integridad por contenido
+app.post('/verificar-integridad-contenido', async (req, res) => {
+  const { noticiaTexto } = req.body;
+
+  try {
+    const hashRegistryService = new BlockchainServiceHashRegistry();
+    const resultado = await hashRegistryService.verificarIntegridad(noticiaTexto);
+    
+    res.json(resultado);
+  } catch (error) {
+    console.error('Error verificando integridad:', error.message);
+    res.status(500).json({ error: 'Error verificando integridad' });
+  }
+});
+
+// Endpoint para obtener estadísticas del hash registry
+app.get('/estadisticas-hash-registry', async (req, res) => {
+  try {
+    const hashRegistryService = new BlockchainServiceHashRegistry();
+    const resultado = await hashRegistryService.obtenerEstadisticas();
+    
+    res.json(resultado);
+  } catch (error) {
+    console.error('Error obteniendo estadísticas:', error.message);
+    res.status(500).json({ error: 'Error obteniendo estadísticas' });
+  }
+});
+
+// Endpoint para registrar múltiples hashes
+app.post('/registrar-multiples-hashes', async (req, res) => {
+  const { noticias } = req.body; // Array de {texto, resultado}
+
+  try {
+    const hashRegistryService = new BlockchainServiceHashRegistry();
+    const resultado = await hashRegistryService.registrarMultiplesHashes(noticias);
+    
+    res.json(resultado);
+  } catch (error) {
+    console.error('Error registrando múltiples hashes:', error.message);
+    res.status(500).json({ error: 'Error registrando múltiples hashes' });
+  }
 });
 
 app.listen(3000, () => {
