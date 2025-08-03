@@ -5,6 +5,12 @@ const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const MODEL = 'llama3-70b-8192';
 
+// Verificar que la API key esté configurada
+if (!GROQ_API_KEY) {
+  console.error('ERROR: GROQ_API_KEY no está configurada en el archivo .env');
+  throw new Error('GROQ_API_KEY no está configurada');
+}
+
 async function verificarConIA(texto) {
   try {
     const prompt = `
