@@ -1,5 +1,5 @@
 const axios = require('axios');
-require('dotenv').config(); // Cargar variables desde .env
+require('dotenv').config();
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
@@ -7,7 +7,7 @@ const MODEL = 'llama3-70b-8192';
 
 // Configuración de timeout y reintentos
 const AXIOS_CONFIG = {
-  timeout: 30000, // 30 segundos
+  timeout: 30000,
   headers: {
     'Authorization': `Bearer ${GROQ_API_KEY}`,
     'Content-Type': 'application/json'
@@ -18,6 +18,56 @@ const AXIOS_CONFIG = {
 if (!GROQ_API_KEY) {
   console.error('ERROR: GROQ_API_KEY no está configurada en el archivo .env');
   throw new Error('GROQ_API_KEY no está configurada');
+}
+
+// Función de fallback simple
+function verificarFallback(texto) {
+  console.log('Usando verificación de fallback...');
+  
+  // Análisis básico basado en palabras clave
+  const palabrasClaveVerdaderas = [
+    'elecciones', 'presidente', 'gobierno', 'ministerio', 'congreso',
+    'ley', 'decreto', 'anuncio', 'confirmado', 'oficial'
+  ];
+  
+  const palabrasClaveFalsas = [
+    'alienígenas', 'ovni', 'milagro', 'fantasma', 'bruja',
+    'conspiración', 'secreto', 'misterio', 'paranormal'
+  ];
+  
+  const textoLower = texto.toLowerCase();
+  let score = 50; // Score base
+  let veredicto = 'No concluyente';
+  let razonamiento = 'Análisis básico realizado.';
+  
+  // Contar palabras clave verdaderas
+  const verdaderas = palabrasClaveVerdaderas.filter(palabra => 
+    textoLower.includes(palabra)
+  ).length;
+  
+  // Contar palabras clave falsas
+  const falsas = palabrasClaveFalsas.filter(palabra => 
+    textoLower.includes(palabra)
+  ).length;
+  
+  // Calcular score
+  if (verdaderas > 0 && falsas === 0) {
+    score = Math.min(85, 50 + (verdaderas * 10));
+    veredicto = 'Posiblemente Verdadera';
+    razonamiento = `Contiene ${verdaderas} indicadores de credibilidad.`;
+  } else if (falsas > 0) {
+    score = Math.max(15, 50 - (falsas * 15));
+    veredicto = 'Posiblemente Falsa';
+    razonamiento = `Contiene ${falsas} indicadores de baja credibilidad.`;
+  }
+  
+  return {
+    veredicto,
+    score,
+    razonamiento,
+    fuenteCoincidente: null,
+    metodo: 'FALLBACK'
+  };
 }
 
 async function verificarConIA(texto) {
@@ -57,46 +107,28 @@ Texto a evaluar:
     const jsonString = content.substring(jsonStart, jsonEnd + 1);
 
     const resultado = JSON.parse(jsonString);
+    resultado.metodo = 'GROQ';
     return resultado;
 
   } catch (err) {
     console.error('Error al usar Groq:', err.message);
     
     // Manejo específico de errores de conectividad
-    if (err.code === 'ENOTFOUND' || err.code === 'ECONNREFUSED') {
-      console.error('Error de conectividad con Groq. Verificando configuración...');
-      console.error('URL:', GROQ_API_URL);
-      console.error('API Key configurada:', GROQ_API_KEY ? 'Sí' : 'No');
-      
-      return {
-        veredicto: 'No concluyente',
-        score: 50,
-        razonamiento: 'Error de conectividad con el servicio de IA. Verifica tu conexión a internet.',
-        fuenteCoincidente: null,
-        error: 'CONNECTIVITY_ERROR'
-      };
+    if (err.code === 'ENOTFOUND' || err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT') {
+      console.error('Error de conectividad con Groq. Usando fallback...');
+      return verificarFallback(texto);
     }
     
     // Manejo de errores de API
     if (err.response) {
       console.error('Error de API Groq:', err.response.status, err.response.data);
-      return {
-        veredicto: 'No concluyente',
-        score: 50,
-        razonamiento: `Error del servicio de IA: ${err.response.status}`,
-        fuenteCoincidente: null,
-        error: 'API_ERROR'
-      };
+      console.log('Usando fallback debido a error de API...');
+      return verificarFallback(texto);
     }
     
-    return {
-      veredicto: 'No concluyente',
-      score: 50,
-      razonamiento: 'No se pudo analizar el texto correctamente.',
-      fuenteCoincidente: null,
-      error: 'UNKNOWN_ERROR'
-    };
+    console.log('Error desconocido, usando fallback...');
+    return verificarFallback(texto);
   }
 }
 
-module.exports = verificarConIA;
+module.exports = verificarConIA; 

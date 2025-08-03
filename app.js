@@ -2,7 +2,7 @@
 const express = require('express');
 const cors = require('cors');
 const app = express();
-const verificarConIA = require('./ia/verificadorIA');
+const verificarConIA = require('./ia/verificadorIAFallback');
 const extraerTextoDeLink = require('./utils/extraerTextoDeLink');
 const BlockchainService = require('./blockchain/blockchainServiceSimple');
 
